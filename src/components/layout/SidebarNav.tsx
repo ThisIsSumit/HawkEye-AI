@@ -1,4 +1,4 @@
-import {Shield, LayoutDashboard, Radar, Bell, SearchCheck, FileBarChart, Settings, X} from 'lucide-react';
+import {Shield, LayoutDashboard, Radar, Bell, SearchCheck, FileBarChart, Settings, UserCircle, X, AlertCircle} from 'lucide-react';
 import {NavLink} from 'react-router-dom';
 import {cn} from '../../utils';
 
@@ -6,7 +6,7 @@ const navItems = [
   {to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard},
   {to: '/threats', label: 'Threat Feed', icon: Radar},
   {to: '/threats/THR-1001', label: 'Investigations', icon: SearchCheck},
-  {to: '/alerts', label: 'Alerts', icon: Bell},
+  {to: '/alerts', label: 'Alerts', icon: AlertCircle},
   {to: '/reports', label: 'Reports', icon: FileBarChart},
   {to: '/settings', label: 'Settings', icon: Settings},
 ];
