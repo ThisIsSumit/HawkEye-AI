@@ -4,6 +4,7 @@ import {useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {Input} from '../ui/input';
 import {StatusBadge} from '../ui/badge';
+import {useAuth} from '../../hooks/use-auth';
 
 interface TopHeaderProps {
   onMenuToggle: () => void;
@@ -12,6 +13,15 @@ interface TopHeaderProps {
 export function TopHeader({onMenuToggle}: Readonly<TopHeaderProps>) {
   const [status] = useState<'Live' | 'Degraded'>('Live');
   const navigate = useNavigate();
+  const {user, logout} = useAuth();
+  const initials = user?.name
+    ? user.name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
+    : 'AR';
 
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
@@ -49,8 +59,8 @@ export function TopHeader({onMenuToggle}: Readonly<TopHeaderProps>) {
           </button>
           <DropdownMenu.Root>
             <DropdownMenu.Trigger className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-100">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 font-medium text-slate-700">AR</div>
-              <span className="hidden sm:inline">Alex Rivera</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 font-medium text-slate-700">{initials}</div>
+              <span className="hidden sm:inline">{user?.name ?? 'Analyst'}</span>
               <ChevronDown className="h-4 w-4" />
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
@@ -68,7 +78,10 @@ export function TopHeader({onMenuToggle}: Readonly<TopHeaderProps>) {
                 <DropdownMenu.Separator className="my-1 h-px bg-slate-200" />
                 <DropdownMenu.Item
                   className="cursor-pointer rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
-                  onSelect={() => navigate('/dashboard')}
+                  onSelect={() => {
+                    logout();
+                    navigate('/login', {replace: true});
+                  }}
                 >
                   Sign out
                 </DropdownMenu.Item>

@@ -1,8 +1,11 @@
+import {useMemo, useState} from 'react';
 import {jsPDF} from 'jspdf';
 import {Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
 import {Button} from '../components/ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from '../components/ui/card';
 import {EmptyState} from '../components/ui/empty-state';
+import {Input} from '../components/ui/input';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/ui/select';
 import {Skeleton} from '../components/ui/skeleton';
 import {useAnalyticsSummary, useReports} from '../hooks/use-security-data';
 
@@ -28,8 +31,51 @@ function downloadPdfReport(title: string, incidents: number, criticalCount: numb
 }
 
 export function Reports() {
+  const [search, setSearch] = useState('');
+  const [generatedRange, setGeneratedRange] = useState<'all' | '24h' | '7d' | '30d'>('all');
+  const [minCritical, setMinCritical] = useState('0');
+  const [sortBy, setSortBy] = useState<'generated-desc' | 'generated-asc' | 'incidents-desc' | 'critical-desc'>('generated-desc');
+
   const reportsQuery = useReports();
   const summaryQuery = useAnalyticsSummary();
+  const reports = reportsQuery.data ?? [];
+  const trendData = summaryQuery.data?.threatTrend ?? [];
+  const normalizedSearch = search.trim().toLowerCase();
+
+  const filteredReports = useMemo(() => {
+    const minCriticalCount = Number(minCritical) || 0;
+    const now = Date.now();
+    const thresholdByRange: Record<typeof generatedRange, number> = {
+      all: 0,
+      '24h': now - 24 * 60 * 60 * 1000,
+      '7d': now - 7 * 24 * 60 * 60 * 1000,
+      '30d': now - 30 * 24 * 60 * 60 * 1000,
+    };
+
+    const filtered = reports.filter((report) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        report.id.toLowerCase().includes(normalizedSearch) ||
+        report.title.toLowerCase().includes(normalizedSearch);
+      const matchesCritical = report.criticalCount >= minCriticalCount;
+      const matchesRange =
+        generatedRange === 'all' || new Date(report.generatedAt).getTime() >= thresholdByRange[generatedRange];
+      return matchesSearch && matchesCritical && matchesRange;
+    });
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'generated-desc') {
+        return new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime();
+      }
+      if (sortBy === 'generated-asc') {
+        return new Date(a.generatedAt).getTime() - new Date(b.generatedAt).getTime();
+      }
+      if (sortBy === 'incidents-desc') {
+        return b.incidents - a.incidents;
+      }
+      return b.criticalCount - a.criticalCount;
+    });
+  }, [generatedRange, minCritical, normalizedSearch, reports, sortBy]);
 
   if (reportsQuery.isLoading || summaryQuery.isLoading) {
     return <Skeleton className="h-125" />;
@@ -44,13 +90,6 @@ export function Reports() {
     );
   }
 
-  if (!reportsQuery.data || !summaryQuery.data) {
-    return <Skeleton className="h-125" />;
-  }
-
-  const reports = reportsQuery.data;
-  const trendData = summaryQuery.data.threatTrend;
-
   return (
     <div className="space-y-6">
       <div>
@@ -58,8 +97,64 @@ export function Reports() {
         <p className="text-sm text-slate-500">Generate and download incident intelligence summaries.</p>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Report Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <Input
+              placeholder="Search report title or ID"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Select value={generatedRange} onValueChange={(value) => setGeneratedRange(value as typeof generatedRange)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Generated range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All time</SelectItem>
+                <SelectItem value="24h">Last 24 hours</SelectItem>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              min={0}
+              placeholder="Min critical"
+              value={minCritical}
+              onChange={(event) => setMinCritical(event.target.value)}
+            />
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="generated-desc">Newest first</SelectItem>
+                <SelectItem value="generated-asc">Oldest first</SelectItem>
+                <SelectItem value="incidents-desc">Most incidents</SelectItem>
+                <SelectItem value="critical-desc">Most critical</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSearch('');
+                setGeneratedRange('all');
+                setMinCritical('0');
+                setSortBy('generated-desc');
+              }}
+            >
+              Reset Filters
+            </Button>
+          </div>
+          <p className="mt-3 text-sm text-slate-500">Showing {filteredReports.length} reports.</p>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 xl:grid-cols-3">
-        {reports.map((report) => (
+        {filteredReports.map((report) => (
           <Card key={report.id}>
             <CardHeader>
               <CardTitle>{report.title}</CardTitle>
@@ -104,6 +199,14 @@ export function Reports() {
             </CardContent>
           </Card>
         ))}
+        {filteredReports.length === 0 && (
+          <div className="xl:col-span-3">
+            <EmptyState
+              title="No matching reports"
+              description="No reports match the current filter criteria."
+            />
+          </div>
+        )}
       </div>
 
       <Card>

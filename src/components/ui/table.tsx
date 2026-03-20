@@ -1,4 +1,4 @@
-import {HTMLAttributes, TableHTMLAttributes} from 'react';
+import {HTMLAttributes, TableHTMLAttributes, TdHTMLAttributes, ThHTMLAttributes} from 'react';
 import {cn} from '../../utils';
 
 export function TableContainer({className, ...props}: Readonly<HTMLAttributes<HTMLDivElement>>) {
@@ -9,7 +9,7 @@ export function Table({className, ...props}: Readonly<TableHTMLAttributes<HTMLTa
   return <table className={cn('w-full border-collapse text-sm', className)} {...props} />;
 }
 
-export function Th({className, ...props}: Readonly<HTMLAttributes<HTMLTableCellElement>>) {
+export function Th({className, ...props}: Readonly<ThHTMLAttributes<HTMLTableCellElement>>) {
   return (
     <th
       className={cn('border-b border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-semibold text-slate-600', className)}
@@ -18,6 +18,6 @@ export function Th({className, ...props}: Readonly<HTMLAttributes<HTMLTableCellE
   );
 }
 
-export function Td({className, ...props}: Readonly<HTMLAttributes<HTMLTableCellElement>>) {
+export function Td({className, ...props}: Readonly<TdHTMLAttributes<HTMLTableCellElement>>) {
   return <td className={cn('border-b border-slate-100 px-3 py-2 text-sm text-slate-700', className)} {...props} />;
 }

@@ -1,5 +1,6 @@
 import {ReactNode, useMemo, useState} from 'react';
 import {Card, CardContent, CardHeader, CardTitle} from '../components/ui/card';
+import {Button} from '../components/ui/button';
 import {Input} from '../components/ui/input';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/ui/select';
 import {AlertsTable} from '../components/tables/AlertsTable';
@@ -12,6 +13,7 @@ export function Alerts() {
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<AlertStatus | 'all'>('all');
+  const [sortBy, setSortBy] = useState<'created-desc' | 'created-asc' | 'severity-desc' | 'severity-asc'>('created-desc');
 
   const alertsQuery = useAlerts();
   const assignMutation = useAssignAlert();
@@ -19,7 +21,7 @@ export function Alerts() {
 
   const filtered = useMemo(() => {
     const items = alertsQuery.data ?? [];
-    return items.filter((alert) => {
+    const filteredItems = items.filter((alert) => {
       const matchesSearch =
         alert.title.toLowerCase().includes(search.toLowerCase()) ||
         alert.id.toLowerCase().includes(search.toLowerCase()) ||
@@ -28,7 +30,27 @@ export function Alerts() {
       const matchesStatus = statusFilter === 'all' || alert.status === statusFilter;
       return matchesSearch && matchesSeverity && matchesStatus;
     });
-  }, [alertsQuery.data, search, severityFilter, statusFilter]);
+
+    const severityWeight: Record<Severity, number> = {
+      low: 1,
+      medium: 2,
+      high: 3,
+      critical: 4,
+    };
+
+    return filteredItems.sort((a, b) => {
+      if (sortBy === 'created-desc') {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      if (sortBy === 'created-asc') {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      if (sortBy === 'severity-desc') {
+        return severityWeight[b.severity] - severityWeight[a.severity];
+      }
+      return severityWeight[a.severity] - severityWeight[b.severity];
+    });
+  }, [alertsQuery.data, search, severityFilter, sortBy, statusFilter]);
 
   let content: ReactNode;
   if (alertsQuery.isLoading) {
@@ -69,7 +91,7 @@ export function Alerts() {
           <CardTitle>Search & Filter</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <Input
               placeholder="Search alert title, ID, or source IP"
               value={search}
@@ -98,7 +120,30 @@ export function Alerts() {
                 <SelectItem value="resolved">Resolved</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created-desc">Newest first</SelectItem>
+                <SelectItem value="created-asc">Oldest first</SelectItem>
+                <SelectItem value="severity-desc">Severity high to low</SelectItem>
+                <SelectItem value="severity-asc">Severity low to high</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSearch('');
+                setSeverityFilter('all');
+                setStatusFilter('all');
+                setSortBy('created-desc');
+              }}
+            >
+              Reset Filters
+            </Button>
           </div>
+          <p className="mt-3 text-sm text-slate-500">Showing {filtered.length} matching alerts.</p>
         </CardContent>
       </Card>
 

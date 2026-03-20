@@ -79,7 +79,7 @@ It provides a multi-page analyst workflow for:
 
 ## Real-Time Data
 
-The app subscribes to `/stream` via EventSource (SSE) in [src/hooks/use-security-data.ts](src/hooks/use-security-data.ts).
+The app subscribes to `/api/stream` using a fetch-based SSE reader in [src/hooks/use-security-data.ts](src/hooks/use-security-data.ts).
 
 If no backend stream is available, it falls back to simulated events so the live activity UI remains usable in local/dev mode.
 
@@ -89,12 +89,14 @@ API client logic is implemented in [src/lib/api/index.ts](src/lib/api/index.ts).
 
 Primary backend endpoints used:
 
-- `GET /alerts`
-- `GET /alerts/{id}`
-- `POST /alerts/{id}/analyze`
-- `POST /alerts/{id}/actions/block-ip`
-- `GET /analytics/summary`
-- `GET /stream`
+- `GET /api/logs/threats`
+- `GET /api/alerts`
+- `GET /api/alerts/{id}`
+- `POST /api/alerts/{id}/analyze`
+- `POST /api/alerts/{id}/actions/block-ip`
+- `GET /api/analytics/summary`
+- `GET /api/reports`
+- `GET /api/stream`
 
 When APIs are unavailable, the app uses realistic mock data fallback to keep all pages functional.
 
@@ -174,8 +176,13 @@ npm run lint
 Optional:
 
 - `VITE_API_BASE_URL`:
-   - Base URL for backend APIs.
-   - If omitted, the app uses relative paths (same-origin).
+  - Base backend URL (for example `http://localhost:8080`).
+  - Client resolves API paths as `<VITE_API_BASE_URL>/api/...`.
+
+Auth token:
+
+- Store JWT as `hawkeye_access_token` (or `accessToken`) in local/session storage.
+- API client automatically sends `Authorization: Bearer <token>` for protected endpoints.
 
 Example `.env`:
 

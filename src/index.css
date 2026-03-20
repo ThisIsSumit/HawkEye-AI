@@ -81,3 +81,19 @@ body {
   z-index: 10;
   background-color: #f8fafc;
 }
+
+.hawk-select-content {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+}
+
+.hawk-select-item,
+.hawk-select-item-text,
+.hawk-select-item * {
+  color: #000000 !important;
+}
+
+.hawk-select-item[data-highlighted] {
+  color: #000000 !important;
+  background-color: #f1f5f9 !important;
+}

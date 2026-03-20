@@ -1,5 +1,5 @@
 import * as SelectPrimitive from '@radix-ui/react-select';
-import {ChevronDown} from 'lucide-react';
+import {Check, ChevronDown} from 'lucide-react';
 import {ComponentPropsWithoutRef} from 'react';
 import {cn} from '../../utils';
 
@@ -32,25 +32,35 @@ export function SelectContent({className, ...props}: Readonly<ComponentPropsWith
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
-        className={cn('z-50 min-w-40 rounded-lg border border-slate-200 bg-white p-1 shadow-lg', className)}
+        position="popper"
+        sideOffset={4}
+        className={cn(
+          'hawk-select-content z-9999 min-w-40 overflow-hidden rounded-lg border border-slate-200 bg-white text-black shadow-lg',
+          className,
+        )}
         {...props}
       >
-        <SelectPrimitive.Viewport>{props.children}</SelectPrimitive.Viewport>
+        <SelectPrimitive.Viewport className="p-1">{props.children}</SelectPrimitive.Viewport>
       </SelectPrimitive.Content>
     </SelectPrimitive.Portal>
   );
 }
 
-export function SelectItem({className, ...props}: Readonly<ComponentPropsWithoutRef<typeof SelectPrimitive.Item>>) {
+export function SelectItem({className, children, ...props}: Readonly<ComponentPropsWithoutRef<typeof SelectPrimitive.Item>>) {
   return (
     <SelectPrimitive.Item
       className={cn(
-        'relative cursor-pointer select-none rounded-md px-2 py-1.5 text-sm text-slate-700 outline-none hover:bg-slate-100 data-highlighted:bg-slate-100',
+        'hawk-select-item relative flex w-full cursor-default select-none items-center rounded-md py-1.5 pl-8 pr-2 text-sm text-black outline-none hover:bg-slate-100 data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-slate-100 data-highlighted:text-black',
         className,
       )}
       {...props}
     >
-      <SelectPrimitive.ItemText />
+      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+        <SelectPrimitive.ItemIndicator>
+          <Check className="h-4 w-4" />
+        </SelectPrimitive.ItemIndicator>
+      </span>
+      <SelectPrimitive.ItemText className="hawk-select-item-text">{children}</SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
   );
 }

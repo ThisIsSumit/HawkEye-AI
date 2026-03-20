@@ -1,4 +1,4 @@
-import {ReactNode, useMemo, useState} from 'react';
+import {ReactNode, useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Card, CardContent, CardHeader, CardTitle} from '../components/ui/card';
 import {EmptyState} from '../components/ui/empty-state';
@@ -15,6 +15,7 @@ const pageSize = 10;
 export function ThreatFeed() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
   const [severity, setSeverity] = useState<ThreatFilter['severity']>('all');
   const [attackType, setAttackType] = useState('');
   const [timeRange, setTimeRange] = useState<ThreatFilter['timeRange']>('24h');
@@ -40,6 +41,26 @@ export function ThreatFeed() {
     return Math.max(1, Math.ceil(data.total / pageSize));
   }, [data]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [severity, attackType, timeRange, sortBy, sortOrder]);
+
+  const filteredThreats = useMemo(() => {
+    const items = data?.items ?? [];
+    const normalizedSearch = search.trim().toLowerCase();
+
+    if (normalizedSearch.length === 0) {
+      return items;
+    }
+
+    return items.filter((threat) =>
+      [threat.id, threat.sourceIp, threat.attackType, threat.endpoint, threat.status]
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedSearch),
+    );
+  }, [data?.items, search]);
+
   const onSort = (field: keyof Threat) => {
     if (field === sortBy) {
       setSortOrder((previous) => (previous === 'asc' ? 'desc' : 'asc'));
@@ -59,19 +80,19 @@ export function ThreatFeed() {
         description="The threat data source is unavailable. Retry after checking backend connectivity."
       />
     );
-  } else if (data.items.length === 0) {
+  } else if (filteredThreats.length === 0) {
     content = (
       <EmptyState
         title="No threats match the selected filters"
-        description="Adjust severity, attack type, or time range to broaden the results."
+        description="Adjust severity, attack type, time range, or search query to broaden the results."
       />
     );
   } else {
     content = (
       <ThreatsTable
-        threats={data.items}
+        threats={filteredThreats}
         onSort={onSort}
-        onRowClick={(threat) => navigate(`/threats/${threat.id}`)}
+        onRowClick={(threat) => navigate(`/investigation/${threat.id}`)}
       />
     );
   }
@@ -106,6 +127,15 @@ export function ThreatFeed() {
             </div>
 
             <div>
+              <p className="mb-1 text-xs font-medium text-slate-500">Search</p>
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Threat ID, source IP, endpoint"
+              />
+            </div>
+
+            <div>
               <p className="mb-1 text-xs font-medium text-slate-500">Attack Type</p>
               <Input
                 value={attackType}
@@ -129,12 +159,35 @@ export function ThreatFeed() {
               </Select>
             </div>
 
+              <div>
+                <p className="mb-1 text-xs font-medium text-slate-500">Sort</p>
+                <Select
+                  value={`${sortBy}-${sortOrder}`}
+                  onValueChange={(value) => {
+                    const [nextSortBy, nextSortOrder] = value.split('-') as [ThreatFilter['sortBy'], ThreatFilter['sortOrder']];
+                    setSortBy(nextSortBy);
+                    setSortOrder(nextSortOrder);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="timestamp-desc">Newest first</SelectItem>
+                    <SelectItem value="timestamp-asc">Oldest first</SelectItem>
+                    <SelectItem value="severity-desc">Severity high to low</SelectItem>
+                    <SelectItem value="severity-asc">Severity low to high</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
             <div className="flex items-end">
               <Button
                 variant="secondary"
                 className="w-full"
                 onClick={() => {
                   setPage(1);
+                  setSearch('');
                   setSeverity('all');
                   setAttackType('');
                   setTimeRange('24h');
@@ -158,7 +211,7 @@ export function ThreatFeed() {
 
           <div className="flex items-center justify-between">
             <p className="text-sm text-slate-500">
-              Page {page} of {totalPages}
+              Page {page} of {totalPages} · Showing {filteredThreats.length} events
             </p>
             <div className="flex gap-2">
               <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((previous) => previous - 1)}>

@@ -4,6 +4,8 @@ import {
 	analyzeAlert,
 	assignAlert,
 	blockIpForAlert,
+	getApiAuthHeader,
+	getApiRootUrl,
 	getAlertById,
 	getAlerts,
 	getAnalyticsSummary,
@@ -11,7 +13,7 @@ import {
 	getThreatById,
 	getThreats,
 	resolveAlert,
-} from '../lib/api';
+} from '../lib/api/index';
 import {StreamThreatEvent, ThreatFilter} from '../types/index';
 
 export const queryKeys = {
@@ -44,6 +46,7 @@ export function useThreatById(id: string) {
 		queryKey: queryKeys.threatById(id),
 		queryFn: () => getThreatById(id),
 		enabled: Boolean(id),
+		placeholderData: (previous) => previous,
 	});
 }
 
@@ -143,13 +146,96 @@ function buildFallbackEvent(counter: number): StreamThreatEvent {
 	return samples[counter % samples.length];
 }
 
-export function useThreatStream() {
+function parseSseChunks(rawBuffer: string): {nextBuffer: string; payloads: string[]} {
+	const chunks = rawBuffer.split('\n\n');
+	const nextBuffer = chunks.pop() ?? '';
+	const payloads: string[] = [];
+
+	for (const chunk of chunks) {
+		const dataLine = chunk
+			.split('\n')
+			.find((line) => line.startsWith('data:'));
+
+		if (!dataLine) {
+			continue;
+		}
+
+		const payloadRaw = dataLine.replace(/^data:\s*/, '').trim();
+		if (!payloadRaw || payloadRaw === '[DONE]') {
+			continue;
+		}
+
+		payloads.push(payloadRaw);
+	}
+
+	return {nextBuffer, payloads};
+}
+
+function toStreamEvent(payloadRaw: string): StreamThreatEvent | null {
+	try {
+		const payload = JSON.parse(payloadRaw) as StreamThreatEvent;
+		if (payload.type === 'threat-event' || payload.type === 'alert-update') {
+			return payload;
+		}
+		return null;
+	} catch {
+		return {
+			type: 'threat-event',
+			id: `stream-${Date.now()}`,
+			timestamp: new Date().toISOString(),
+			message: payloadRaw,
+			severity: 'medium',
+		};
+	}
+}
+
+async function consumeThreatStream(pushEvent: (event: StreamThreatEvent) => void, signal: AbortSignal) {
+	const response = await fetch(`${getApiRootUrl()}/stream`, {
+		headers: {
+			Accept: 'text/event-stream',
+			...getApiAuthHeader(),
+		},
+		signal,
+	});
+
+	if (!response.ok || !response.body) {
+		throw new Error(`SSE connection failed: ${response.status}`);
+	}
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder('utf-8');
+	let buffer = '';
+
+	while (true) {
+		const {done, value} = await reader.read();
+		if (done) {
+			break;
+		}
+
+		buffer += decoder.decode(value, {stream: true});
+		const parsed = parseSseChunks(buffer);
+		buffer = parsed.nextBuffer;
+
+		for (const payloadRaw of parsed.payloads) {
+			const event = toStreamEvent(payloadRaw);
+			if (event) {
+				pushEvent(event);
+			}
+		}
+	}
+}
+
+export function useThreatStream(enabled = true) {
 	const queryClient = useQueryClient();
 
 	useEffect(() => {
+		if (!enabled) {
+			return;
+		}
+
 		let fallbackCounter = 0;
 		let fallbackTimer: ReturnType<typeof setInterval> | undefined;
-		let eventSource: EventSource | undefined;
+		const abortController = new AbortController();
 
 		const pushEvent = (event: StreamThreatEvent) => {
 			queryClient.setQueryData<StreamThreatEvent[]>(queryKeys.streamEvents, (previous = []) => [event, ...previous].slice(0, 20));
@@ -164,37 +250,23 @@ export function useThreatStream() {
 			}, 12_000);
 		};
 
-		try {
-			eventSource = new EventSource('/stream');
-			eventSource.onmessage = (event) => {
-				try {
-					const payload = JSON.parse(event.data) as StreamThreatEvent;
-					pushEvent(payload);
-				} catch {
-					pushEvent({
-						type: 'threat-event',
-						id: `stream-${Date.now()}`,
-						timestamp: new Date().toISOString(),
-						message: event.data,
-						severity: 'medium',
-					});
-				}
-			};
-
-			eventSource.onerror = () => {
+		const startStream = async () => {
+			try {
+				await consumeThreatStream(pushEvent, abortController.signal);
+			} catch {
 				if (!fallbackTimer) {
 					startFallback();
 				}
-			};
-		} catch {
-			startFallback();
-		}
+			}
+		};
+
+		startStream();
 
 		return () => {
+			abortController.abort();
 			if (fallbackTimer) {
 				globalThis.clearInterval(fallbackTimer);
 			}
-			eventSource?.close();
 		};
-	}, [queryClient]);
+	}, [enabled, queryClient]);
 }

@@ -1,16 +1,19 @@
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import {Card, CardContent, CardHeader, CardTitle} from '../components/ui/card';
 import {KpiCard} from '../components/cards/KpiCard';
 import {AttackDistributionChart} from '../components/charts/AttackDistributionChart';
 import {ThreatTrendChart} from '../components/charts/ThreatTrendChart';
 import {ActivityFeed} from '../components/alerts/ActivityFeed';
 import {SeverityBadge} from '../components/ui/badge';
+import {Button} from '../components/ui/button';
 import {EmptyState} from '../components/ui/empty-state';
+import {Input} from '../components/ui/input';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/ui/select';
 import {Skeleton} from '../components/ui/skeleton';
 import {Table, TableContainer, Td, Th} from '../components/ui/table';
 import {useAlerts, useAnalyticsSummary, useThreats} from '../hooks/use-security-data';
 import {useQueryClient} from '@tanstack/react-query';
-import {Alert, StreamThreatEvent, SummaryMetric, Threat} from '../types/index';
+import {Alert, AlertStatus, Severity, StreamThreatEvent, SummaryMetric, Threat} from '../types/index';
 
 const skeletonKeys = ['a', 'b', 'c', 'd'] as const;
 
@@ -27,6 +30,10 @@ function aggregateTopIps(items: {sourceIp: string}[]): Array<{ip: string; count:
 }
 
 export function Dashboard() {
+  const [search, setSearch] = useState('');
+  const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all');
+  const [alertStatusFilter, setAlertStatusFilter] = useState<AlertStatus | 'all'>('all');
+
   const queryClient = useQueryClient();
   const summaryQuery = useAnalyticsSummary();
   const threatsQuery = useThreats({page: 1, pageSize: 50});
@@ -71,6 +78,36 @@ export function Dashboard() {
   const summary = summaryQuery.data;
   const threats = threatsQuery.data.items;
   const alerts = alertsQuery.data;
+  const normalizedSearch = search.trim().toLowerCase();
+
+  const filteredThreats = threats.filter((threat) => {
+    const matchesSearch =
+      normalizedSearch.length === 0 ||
+      threat.id.toLowerCase().includes(normalizedSearch) ||
+      threat.sourceIp.toLowerCase().includes(normalizedSearch) ||
+      threat.attackType.toLowerCase().includes(normalizedSearch) ||
+      threat.endpoint.toLowerCase().includes(normalizedSearch);
+    const matchesSeverity = severityFilter === 'all' || threat.severity === severityFilter;
+    return matchesSearch && matchesSeverity;
+  });
+
+  const filteredAlerts = alerts.filter((alert) => {
+    const matchesSearch =
+      normalizedSearch.length === 0 ||
+      alert.id.toLowerCase().includes(normalizedSearch) ||
+      alert.title.toLowerCase().includes(normalizedSearch) ||
+      alert.sourceIp.toLowerCase().includes(normalizedSearch);
+    const matchesSeverity = severityFilter === 'all' || alert.severity === severityFilter;
+    const matchesStatus = alertStatusFilter === 'all' || alert.status === alertStatusFilter;
+    return matchesSearch && matchesSeverity && matchesStatus;
+  });
+
+  const filteredTopIps = topIps.filter((item) => {
+    if (normalizedSearch.length === 0) {
+      return true;
+    }
+    return item.ip.toLowerCase().includes(normalizedSearch);
+  });
 
   return (
     <div className="space-y-6">
@@ -89,6 +126,54 @@ export function Dashboard() {
           />
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Global Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <Input
+              placeholder="Search by ID, title, attack type, endpoint, or IP"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Select value={severityFilter} onValueChange={(value) => setSeverityFilter(value as Severity | 'all')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Severity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All severities</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={alertStatusFilter} onValueChange={(value) => setAlertStatusFilter(value as AlertStatus | 'all')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Alert status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All alert statuses</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="assigned">Assigned</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSearch('');
+                setSeverityFilter('all');
+                setAlertStatusFilter('all');
+              }}
+            >
+              Reset Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
@@ -116,11 +201,11 @@ export function Dashboard() {
             <CardTitle>Top Attacking IPs</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            {topIps.length === 0 ? (
+            {filteredTopIps.length === 0 ? (
               <div className="p-5">
                 <EmptyState
-                  title="No attackers found"
-                  description="No source IPs were detected in the selected time window."
+                  title="No matching IPs"
+                  description="No source IP matches the current search filter."
                 />
               </div>
             ) : (
@@ -133,7 +218,7 @@ export function Dashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {topIps.map((item) => (
+                    {filteredTopIps.map((item) => (
                       <tr key={item.ip} className="bg-white">
                         <Td className="font-mono text-xs">{item.ip}</Td>
                         <Td className="text-right">{item.count}</Td>
@@ -151,7 +236,7 @@ export function Dashboard() {
             <CardTitle>Recent Alerts</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {alerts.slice(0, 6).map((alert: Alert) => (
+            {filteredAlerts.slice(0, 6).map((alert: Alert) => (
               <div key={alert.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <p className="text-sm font-medium text-slate-900">{alert.title}</p>
@@ -160,6 +245,12 @@ export function Dashboard() {
                 <p className="text-xs text-slate-500">{new Date(alert.createdAt).toLocaleString()}</p>
               </div>
             ))}
+            {filteredAlerts.length === 0 && (
+              <EmptyState
+                title="No matching alerts"
+                description="No recent alerts match the applied filter set."
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -183,7 +274,7 @@ export function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {threats.slice(0, 8).map((threat: Threat) => (
+                {filteredThreats.slice(0, 8).map((threat: Threat) => (
                   <tr key={threat.id} className="bg-white">
                     <Td>{new Date(threat.timestamp).toLocaleString()}</Td>
                     <Td className="font-mono text-xs">{threat.sourceIp}</Td>
@@ -194,6 +285,16 @@ export function Dashboard() {
                     </Td>
                   </tr>
                 ))}
+                {filteredThreats.length === 0 && (
+                  <tr>
+                    <Td colSpan={5} className="bg-white">
+                      <EmptyState
+                        title="No matching threats"
+                        description="No threats match the current search and severity filters."
+                      />
+                    </Td>
+                  </tr>
+                )}
               </tbody>
             </Table>
           </TableContainer>
