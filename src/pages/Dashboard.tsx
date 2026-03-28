@@ -1,5 +1,5 @@
 import {useMemo, useState} from 'react';
-import {Card, CardContent, CardHeader, CardTitle} from '../components/ui/card';
+import {Card, CardContent, CardHeader} from '../components/ui/card';
 import {KpiCard} from '../components/cards/KpiCard';
 import {AttackDistributionChart} from '../components/charts/AttackDistributionChart';
 import {ThreatTrendChart} from '../components/charts/ThreatTrendChart';
@@ -11,6 +11,7 @@ import {Input} from '../components/ui/input';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/ui/select';
 import {Skeleton} from '../components/ui/skeleton';
 import {Table, TableContainer, Td, Th} from '../components/ui/table';
+import {Search} from 'lucide-react';
 import {useAlerts, useAnalyticsSummary, useThreats} from '../hooks/use-security-data';
 import {useQueryClient} from '@tanstack/react-query';
 import {Alert, AlertStatus, Severity, StreamThreatEvent, SummaryMetric, Threat} from '../types/index';
@@ -110,196 +111,202 @@ export function Dashboard() {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Security Overview</h1>
-        <p className="text-sm text-slate-500">Operational posture and live threat telemetry.</p>
+    <div className="space-y-6 pb-20">
+      <div className="float-entry" style={{ '--i': 1 } as any}>
+        <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tighter uppercase leading-none italic">
+          Security_Overview
+        </h1>
+        <div className="flex items-center gap-2 mt-1.5">
+           <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+           <p className="text-[9px] font-mono font-bold text-secondary tracking-widest uppercase">Operational Posture // Live Telemetry Feed</p>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summary.metrics.map((metric: SummaryMetric) => (
-          <KpiCard
-            key={metric.id}
-            label={metric.label}
-            value={metric.value.toLocaleString()}
-            delta={metric.delta}
-          />
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+        {summary.metrics.map((metric: SummaryMetric, idx: number) => (
+          <div key={metric.id} className="float-entry" style={{ '--i': idx + 2 } as any}>
+            <KpiCard
+              label={metric.label}
+              value={metric.value.toLocaleString()}
+              delta={metric.delta}
+            />
+          </div>
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Global Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Input
-              placeholder="Search by ID, title, attack type, endpoint, or IP"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <Select value={severityFilter} onValueChange={(value) => setSeverityFilter(value as Severity | 'all')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Severity" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All severities</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={alertStatusFilter} onValueChange={(value) => setAlertStatusFilter(value as AlertStatus | 'all')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Alert status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All alert statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="assigned">Assigned</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setSearch('');
-                setSeverityFilter('all');
-                setAlertStatusFilter('all');
-              }}
-            >
-              Reset Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <CardTitle>Threat Trends Over Time</CardTitle>
-          </CardHeader>
+      <div className="float-entry" style={{ '--i': 6 } as any}>
+        <Card className="bg-surface/30">
+          <CardHeader title="Control_Filters" subtitle="Refine telemetry streams" />
           <CardContent>
-            <ThreatTrendChart data={summary.threatTrend} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Attack Types Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AttackDistributionChart data={summary.attackDistribution} />
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Attacking IPs</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {filteredTopIps.length === 0 ? (
-              <div className="p-5">
-                <EmptyState
-                  title="No matching IPs"
-                  description="No source IP matches the current search filter."
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-tertiary group-focus-within:text-accent transition-colors" />
+                <Input
+                  placeholder="SEARCH_BY_ID_OR_IP..."
+                  className="pl-10 bg-void/50 border-white/10 font-mono text-xs uppercase"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
                 />
               </div>
-            ) : (
-              <TableContainer className="max-h-72">
-                <Table className="table-sticky-header">
-                  <thead>
-                    <tr>
-                      <Th>IP</Th>
-                      <Th className="text-right">Events</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTopIps.map((item) => (
-                      <tr key={item.ip} className="bg-white">
-                        <Td className="font-mono text-xs">{item.ip}</Td>
-                        <Td className="text-right">{item.count}</Td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </TableContainer>
-            )}
+              <Select value={severityFilter} onValueChange={(value) => setSeverityFilter(value as Severity | 'all')}>
+                <SelectTrigger className="bg-void/50 border-white/10 font-mono text-[10px] uppercase h-9">
+                  <SelectValue placeholder="SEVERITY_LEVEL" />
+                </SelectTrigger>
+                <SelectContent className="bg-surface-modal border-white/10">
+                  <SelectItem value="all">ALL_SEV</SelectItem>
+                  <SelectItem value="low">LOW</SelectItem>
+                  <SelectItem value="medium">MEDIUM</SelectItem>
+                  <SelectItem value="high">HIGH</SelectItem>
+                  <SelectItem value="critical">CRITICAL</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={alertStatusFilter} onValueChange={(value) => setAlertStatusFilter(value as AlertStatus | 'all')}>
+                <SelectTrigger className="bg-void/50 border-white/10 font-mono text-[10px] uppercase h-9">
+                  <SelectValue placeholder="ALERT_STATUS" />
+                </SelectTrigger>
+                <SelectContent className="bg-surface-modal border-white/10">
+                  <SelectItem value="all">ALL_STATUS</SelectItem>
+                  <SelectItem value="open">OPEN</SelectItem>
+                  <SelectItem value="assigned">ASSIGNED</SelectItem>
+                  <SelectItem value="resolved">RESOLVED</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="secondary"
+                className="w-full h-9 text-[10px] tracking-widest"
+                onClick={() => {
+                  setSearch('');
+                  setSeverityFilter('all');
+                  setAlertStatusFilter('all');
+                }}
+              >
+                RESET_LOGS
+              </Button>
+            </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Alerts</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {filteredAlerts.slice(0, 6).map((alert: Alert) => (
-              <div key={alert.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-slate-900">{alert.title}</p>
-                  <SeverityBadge severity={alert.severity} />
-                </div>
-                <p className="text-xs text-slate-500">{new Date(alert.createdAt).toLocaleString()}</p>
-              </div>
-            ))}
-            {filteredAlerts.length === 0 && (
-              <EmptyState
-                title="No matching alerts"
-                description="No recent alerts match the applied filter set."
-              />
-            )}
-          </CardContent>
-        </Card>
-
-        <ActivityFeed events={streamEvents} />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Threats</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <TableContainer className="max-h-80">
-            <Table className="table-sticky-header">
-              <thead>
-                <tr>
-                  <Th>Timestamp</Th>
-                  <Th>Source IP</Th>
-                  <Th>Attack Type</Th>
-                  <Th>Endpoint</Th>
-                  <Th>Severity</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredThreats.slice(0, 8).map((threat: Threat) => (
-                  <tr key={threat.id} className="bg-white">
-                    <Td>{new Date(threat.timestamp).toLocaleString()}</Td>
-                    <Td className="font-mono text-xs">{threat.sourceIp}</Td>
-                    <Td>{threat.attackType}</Td>
-                    <Td>{threat.endpoint}</Td>
-                    <Td>
-                      <SeverityBadge severity={threat.severity} />
-                    </Td>
-                  </tr>
-                ))}
-                {filteredThreats.length === 0 && (
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+        <div className="lg:col-span-2 float-entry" style={{ '--i': 7 } as any}>
+          <Card>
+            <CardHeader title="Threat Analysis Grid" subtitle="Temporal progression of security breaches" />
+            <CardContent className="h-[300px]">
+              <ThreatTrendChart data={summary.threatTrend} />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="float-entry" style={{ '--i': 8 } as any}>
+          <Card>
+            <CardHeader title="Attack Vector Distribution" subtitle="Distribution of detected exploit attempts" />
+            <CardContent className="h-[300px]">
+              <AttackDistributionChart data={summary.attackDistribution} />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+        <div className="float-entry" style={{ '--i': 9 } as any}>
+          <Card className="h-full">
+            <CardHeader title="Top Attacking Entities" subtitle="Source IP reputation & volume" />
+            <CardContent className="p-0">
+              {filteredTopIps.length === 0 ? (
+                <div className="p-10">
+                  <EmptyState
+                    title="No matching IPs"
+                    description="No source IP matches the current search filter."
+                  />
+                </div>
+              ) : (
+                <TableContainer className="max-h-[350px]">
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>ENTITY_IP</Th>
+                        <Th className="text-right">EVENT_COUNT</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTopIps.map((item) => (
+                        <tr key={item.ip} className="group/row">
+                          <Td className="font-mono text-[11px] text-accent">{item.ip}</Td>
+                          <Td className="text-right font-mono text-[11px]">{item.count}</Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="float-entry" style={{ '--i': 10 } as any}>
+          <Card className="h-full">
+            <CardHeader title="Recent Security Alerts" subtitle="Prioritized incidents requiring action" />
+            <CardContent className="space-y-4">
+              {filteredAlerts.slice(0, 5).map((alert: Alert) => (
+                <div key={alert.id} className="group p-4 rounded-xl bg-void/40 border border-white/5 hover:border-accent/40 transition-all duration-300 shadow-l1">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="font-display font-medium text-white text-xs tracking-tight group-hover:text-accent transition-colors">{alert.title.toUpperCase()}</p>
+                    <SeverityBadge severity={alert.severity} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-mono text-secondary tracking-widest">{new Date(alert.createdAt).toLocaleTimeString()}</p>
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent/20 group-hover:bg-accent transition-colors" />
+                  </div>
+                </div>
+              ))}
+              {filteredAlerts.length === 0 && (
+                <EmptyState
+                  title="No matching alerts"
+                  description="No recent alerts match the applied filter set."
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="float-entry" style={{ '--i': 11 } as any}>
+          <ActivityFeed events={streamEvents} />
+        </div>
+      </div>
+
+      <div className="float-entry" style={{ '--i': 12 } as any}>
+        <Card>
+          <CardHeader title="Live Threat Stream" subtitle="Full telemetry log of active engagements" />
+          <CardContent className="p-0">
+            <TableContainer className="max-h-[400px]">
+              <Table>
+                <thead>
                   <tr>
-                    <Td colSpan={5} className="bg-white">
-                      <EmptyState
-                        title="No matching threats"
-                        description="No threats match the current search and severity filters."
-                      />
-                    </Td>
+                    <Th>TIMESTAMP</Th>
+                    <Th>SOURCE_IP</Th>
+                    <Th>ATTACK_VECTOR</Th>
+                    <Th>TARGET_ENDPOINT</Th>
+                    <Th className="text-center">SEVERITY</Th>
                   </tr>
-                )}
-              </tbody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+                </thead>
+                <tbody>
+                  {filteredThreats.slice(0, 10).map((threat: Threat) => (
+                    <tr key={threat.id} className="group/row">
+                      <Td className="font-mono text-[11px] text-secondary">{new Date(threat.timestamp).toLocaleTimeString()}</Td>
+                      <Td className="font-mono text-[11px] text-accent">{threat.sourceIp}</Td>
+                      <Td className="font-mono text-[11px] text-white/80">{threat.attackType.toUpperCase()}</Td>
+                      <Td className="font-mono text-[10px] text-secondary italic">{threat.endpoint}</Td>
+                      <Td className="text-center">
+                        <SeverityBadge severity={threat.severity} />
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

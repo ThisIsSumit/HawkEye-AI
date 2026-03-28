@@ -3,15 +3,63 @@ import {TimePoint} from '../../types/index';
 
 export function ThreatTrendChart({data}: Readonly<{data: TimePoint[]}>) {
   return (
-    <div className="h-64 w-full">
+    <div className="h-full w-full font-mono">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-          <XAxis dataKey="time" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
-          <YAxis tick={{fontSize: 12}} axisLine={false} tickLine={false} />
-          <Tooltip />
-          <Line type="monotone" dataKey="threats" stroke="#EF4444" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="blocked" stroke="#2563EB" strokeWidth={2} dot={false} />
+          <defs>
+             <linearGradient id="gradient-threats" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--danger)" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="var(--danger)" stopOpacity={0} />
+             </linearGradient>
+             <linearGradient id="gradient-blocked" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--blue-accent)" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="var(--blue-accent)" stopOpacity={0} />
+             </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
+          <XAxis 
+            dataKey="time" 
+            tick={{fontSize: 9, fill: 'var(--text-secondary)', fontFamily: 'var(--font-mono)'}} 
+            axisLine={false} 
+            tickLine={false} 
+            dy={10}
+          />
+          <YAxis 
+            tick={{fontSize: 9, fill: 'var(--text-secondary)', fontFamily: 'var(--font-mono)'}} 
+            axisLine={false} 
+            tickLine={false}
+            dx={-10}
+          />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: 'var(--surface-modal)', 
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderRadius: '12px',
+              fontSize: '10px',
+              fontFamily: 'var(--font-mono)',
+              boxShadow: 'var(--shadow-l3)',
+              backdropFilter: 'blur(12px)'
+            }}
+            itemStyle={{ color: 'var(--text-primary)' }}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="threats" 
+            stroke="var(--danger)" 
+            strokeWidth={2} 
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 0, fill: 'var(--danger)' }}
+            animationDuration={2000}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="blocked" 
+            stroke="var(--blue-accent)" 
+            strokeWidth={2} 
+            dot={false}
+            activeDot={{ r: 4, strokeWidth: 0, fill: 'var(--blue-accent)' }}
+            animationDuration={2000}
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>

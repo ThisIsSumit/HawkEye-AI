@@ -12,44 +12,44 @@ interface ThreatsTableProps {
 
 export function ThreatsTable({threats, onSort, onRowClick}: Readonly<ThreatsTableProps>) {
   return (
-    <TableContainer className="max-h-115 rounded-lg border border-slate-200">
-      <Table className="table-sticky-header">
+    <TableContainer className="max-h-160 relative">
+      <Table>
         <thead>
           <tr>
-            <Th>Timestamp</Th>
-            <Th>Source IP</Th>
+            <Th>TIMESTAMP</Th>
+            <Th>SOURCE_IP</Th>
             <Th>
-              <Button variant="outline" size="sm" className="h-auto border-0 p-0 text-xs" onClick={() => onSort('attackType')}>
-                Attack Type
-                <ArrowUpDown className="h-3 w-3" />
-              </Button>
+               <button className="flex items-center gap-2 group/btn" onClick={() => onSort('attackType')}>
+                ATTACK_VECTOR
+                <ArrowUpDown className="h-3 w-3 opacity-30 group-hover/btn:opacity-100 transition-opacity" />
+              </button>
             </Th>
-            <Th>Endpoint</Th>
+            <Th>TARGET_ENDPOINT</Th>
             <Th>
-              <Button variant="outline" size="sm" className="h-auto border-0 p-0 text-xs" onClick={() => onSort('severity')}>
-                Severity
-                <ArrowUpDown className="h-3 w-3" />
-              </Button>
+              <button className="flex items-center gap-2 group/btn" onClick={() => onSort('severity')}>
+                SEVERITY_LVL
+                <ArrowUpDown className="h-3 w-3 opacity-30 group-hover/btn:opacity-100 transition-opacity" />
+              </button>
             </Th>
-            <Th>Status</Th>
+            <Th>SESSION_ST</Th>
           </tr>
         </thead>
         <tbody>
           {threats.map((threat) => (
             <tr
               key={threat.id}
-              className="cursor-pointer bg-white hover:bg-slate-50"
+              className="cursor-pointer group/row"
               onClick={() => onRowClick?.(threat)}
             >
-              <Td>{new Date(threat.timestamp).toLocaleString()}</Td>
-              <Td className="font-mono text-xs">{threat.sourceIp}</Td>
-              <Td>{threat.attackType}</Td>
-              <Td>{threat.endpoint}</Td>
+              <Td className="font-mono text-[11px] text-secondary">{new Date(threat.timestamp).toLocaleString()}</Td>
+              <Td className="font-mono text-[11px] text-accent font-bold tracking-tight">{threat.sourceIp}</Td>
+              <Td className="font-mono text-[11px] text-white uppercase">{threat.attackType}</Td>
+              <Td className="font-mono text-[10px] text-secondary italic">{threat.endpoint}</Td>
               <Td>
                 <SeverityBadge severity={threat.severity} />
               </Td>
               <Td>
-                <StatusBadge className="capitalize">{threat.status}</StatusBadge>
+                <StatusBadge className="font-mono text-[9px] uppercase tracking-widest bg-void/50 border-white/5">{threat.status}</StatusBadge>
               </Td>
             </tr>
           ))}

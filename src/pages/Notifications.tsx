@@ -1,6 +1,6 @@
 import {useMemo, useState} from 'react';
-import {Bell, CheckCheck} from 'lucide-react';
-import {Card, CardContent, CardHeader, CardTitle} from '../components/ui/card';
+import {Bell, CheckCheck, Zap, Info, ShieldAlert} from 'lucide-react';
+import {Card, CardContent, CardHeader} from '../components/ui/card';
 import {Button} from '../components/ui/button';
 import {StatusBadge} from '../components/ui/badge';
 import {Input} from '../components/ui/input';
@@ -54,88 +54,124 @@ export function Notifications() {
   }, [notificationsState, search, statusFilter]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-10 pb-20">
+      <div className="float-entry flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6" style={{ '--i': 1 } as any}>
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Notifications</h1>
-          <p className="text-sm text-slate-500">Operational updates, alert changes, and system events.</p>
+          <div className="flex items-center gap-3 mb-2">
+             <div className="p-2 rounded-lg bg-void/50 border border-white/10 text-accent font-mono font-bold text-xs shadow-l1">
+                SIG_CH
+             </div>
+             <p className="text-[10px] font-mono font-bold text-secondary uppercase tracking-[0.3em]">Communication_Channel // Ops_Log</p>
+          </div>
+          <h1 className="text-4xl font-display font-black text-white tracking-tighter uppercase leading-none italic">
+            Signal_Central
+          </h1>
         </div>
         <Button
           variant="secondary"
+          className="text-[10px] font-mono h-12 px-6 shadow-l1"
           onClick={() =>
             setNotificationsState((previous) =>
               previous.map((notification) => ({...notification, read: true})),
             )
           }
         >
-          <CheckCheck className="h-4 w-4" />
-          Mark all as read
+          <CheckCheck className="mr-2 h-4 w-4" />
+          CLEAR_ALL_BUFFERS
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Filter Notifications</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-3">
-            <Input
-              placeholder="Search by ID, title, or details"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All notifications</SelectItem>
-                <SelectItem value="unread">Unread only</SelectItem>
-                <SelectItem value="read">Read only</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setSearch('');
-                setStatusFilter('all');
-              }}
-            >
-              Reset Filters
-            </Button>
-          </div>
-          <p className="mt-3 text-sm text-slate-500">Showing {filteredNotifications.length} notifications.</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Notifications</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {filteredNotifications.map((item) => (
-            <div
-              key={item.id}
-              className={`rounded-lg border p-3 ${item.read ? 'border-slate-100 bg-white' : 'border-blue-200 bg-blue-50/40'}`}
-            >
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Bell className={`h-4 w-4 ${item.read ? 'text-slate-400' : 'text-blue-600'}`} />
-                  <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                </div>
-                <StatusBadge>{item.time}</StatusBadge>
+      <div className="float-entry" style={{ '--i': 2 } as any}>
+        <Card className="bg-surface/30">
+          <CardHeader title="Signal Query" subtitle="Filter parameters for telemetry distribution" />
+          <CardContent>
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+              <div className="space-y-2">
+                <p className="text-[9px] font-mono font-bold text-secondary uppercase tracking-widest px-1">Pattern_ID</p>
+                <Input
+                  className="bg-void/50 border-white/5 font-mono text-[10px]"
+                  placeholder="ID_DESC_TITLE..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
               </div>
-              <p className="text-sm text-slate-600">{item.detail}</p>
+              <div className="space-y-2">
+                <p className="text-[9px] font-mono font-bold text-secondary uppercase tracking-widest px-1">Signal_Status</p>
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+                  <SelectTrigger className="bg-void/50 border-white/5 font-mono text-[10px] uppercase">
+                    <SelectValue placeholder="STATUS" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface-modal border-white/5">
+                    <SelectItem value="all">ALL_SIGNALS</SelectItem>
+                    <SelectItem value="unread">UNREAD_ONLY</SelectItem>
+                    <SelectItem value="read">READ_ARCHIVE</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end pb-0.5">
+                <Button
+                  variant="secondary"
+                  className="w-full text-[10px] font-mono shadow-l1"
+                  onClick={() => {
+                    setSearch('');
+                    setStatusFilter('all');
+                  }}
+                >
+                  HALT_FILTERS
+                </Button>
+              </div>
             </div>
-          ))}
-          {filteredNotifications.length === 0 && (
-            <EmptyState
-              title="No matching notifications"
-              description="No notifications match the selected status and search query."
-            />
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="float-entry" style={{ '--i': 3 } as any}>
+        <Card>
+          <CardHeader title="Incident Log" subtitle="Real-time operational distribution buffer" />
+          <CardContent className="space-y-4">
+            {filteredNotifications.map((item) => (
+              <div
+                key={item.id}
+                className={`group relative p-5 rounded-2xl border transition-all duration-300 overflow-hidden ${
+                  item.read 
+                    ? 'border-white/5 bg-void/20 opacity-60' 
+                    : 'border-accent/20 bg-accent/5 shadow-[0_0_20px_rgba(var(--accent-rgb),0.05)]'
+                }`}
+              >
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${item.read ? 'bg-void/50 text-secondary' : 'bg-accent/10 text-accent'} border border-white/5`}>
+                       {item.title.toLowerCase().includes('critical') ? <ShieldAlert className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+                    </div>
+                    <div>
+                      <h4 className={`text-sm font-display font-medium tracking-tight ${item.read ? 'text-secondary' : 'text-white'}`}>
+                        {item.title}
+                      </h4>
+                      <p className="text-[9px] font-mono text-secondary uppercase tracking-widest mt-0.5">{item.id}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                     <StatusBadge className="bg-void/50 border-white/5 font-mono text-[9px] uppercase tracking-widest px-3">
+                       {item.time}
+                     </StatusBadge>
+                     {!item.read && <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_8px_var(--accent)]" />}
+                  </div>
+                </div>
+                <p className={`text-xs ml-11 ${item.read ? 'text-secondary' : 'text-white/70'} leading-relaxed`}>
+                  {item.detail}
+                </p>
+                <div className={`absolute left-0 top-0 bottom-0 w-1 transition-all ${item.read ? 'bg-white/5' : 'bg-accent shadow-[0_0_10px_var(--accent)]'}`} />
+              </div>
+            ))}
+            {filteredNotifications.length === 0 && (
+              <EmptyState
+                title="Buffer_Empty"
+                description="The signal log returned null for the current sequence."
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

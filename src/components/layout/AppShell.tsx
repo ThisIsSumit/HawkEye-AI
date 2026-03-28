@@ -12,11 +12,12 @@ export function AppShell() {
   useThreatStream(isAuthenticated);
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex h-screen bg-void relative overflow-hidden">
+      <div className="radial-glow-layer" />
       <SidebarNav isMobileOpen={isSidebarOpen} onMobileClose={() => setIsSidebarOpen(false)} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden relative z-10">
         <TopHeader onMenuToggle={() => setIsSidebarOpen((previous) => !previous)} />
-        <main className="p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 xl:p-10 scrollbar-thin">
           <Outlet />
         </main>
       </div>

@@ -1,6 +1,7 @@
 import {ReactNode, useMemo, useState} from 'react';
-import {Card, CardContent, CardHeader, CardTitle} from '../components/ui/card';
+import {Card, CardContent, CardHeader} from '../components/ui/card';
 import {Button} from '../components/ui/button';
+import {Search, Filter, ShieldAlert} from 'lucide-react';
 import {Input} from '../components/ui/input';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/ui/select';
 import {AlertsTable} from '../components/tables/AlertsTable';
@@ -80,81 +81,116 @@ export function Alerts() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">Alerts</h1>
-        <p className="text-sm text-slate-500">Review, assign, and resolve operational alerts.</p>
+    <div className="space-y-6 pb-20">
+      <div className="float-entry" style={{ '--i': 1 } as any}>
+        <div className="flex items-center gap-3 mb-1.5 focus-within:ring-1 ring-accent/20 transition-all">
+           <div className="px-2 py-1 rounded-lg bg-void/50 border border-white/10 text-accent font-mono font-bold text-[10px] shadow-l1">
+              SEC_OPS
+           </div>
+           <p className="text-[9px] font-mono font-bold text-secondary uppercase tracking-[0.2em]">Incident_Management // Queue_Level_0</p>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tighter uppercase leading-none italic">
+          Operational_Alert_Center
+        </h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Search & Filter</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            <Input
-              placeholder="Search alert title, ID, or source IP"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <Select value={severityFilter} onValueChange={(value) => setSeverityFilter(value as Severity | 'all')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Severity" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All severities</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AlertStatus | 'all')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="assigned">Assigned</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created-desc">Newest first</SelectItem>
-                <SelectItem value="created-asc">Oldest first</SelectItem>
-                <SelectItem value="severity-desc">Severity high to low</SelectItem>
-                <SelectItem value="severity-asc">Severity low to high</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setSearch('');
-                setSeverityFilter('all');
-                setStatusFilter('all');
-                setSortBy('created-desc');
-              }}
-            >
-              Reset Filters
-            </Button>
-          </div>
-          <p className="mt-3 text-sm text-slate-500">Showing {filtered.length} matching alerts.</p>
-        </CardContent>
-      </Card>
+      <div className="float-entry" style={{ '--i': 2 } as any}>
+        <Card className="bg-surface/30">
+          <CardHeader title="Tactical_Filters" subtitle="Coordinate incident response parameters" />
+          <CardContent>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono font-bold text-secondary uppercase tracking-widest px-1">Signal_Signature</p>
+                <div className="relative group">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-tertiary group-focus-within:text-accent transition-colors" />
+                  <Input
+                    className="pl-10 bg-void/50 border-white/5 font-mono text-[10px] h-9"
+                    placeholder="ID_DESC_IP..."
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                </div>
+              </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Alert Queue</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {content}
-        </CardContent>
-      </Card>
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono font-bold text-secondary uppercase tracking-widest px-1">Impact_Weight</p>
+                <Select value={severityFilter} onValueChange={(value) => setSeverityFilter(value as Severity | 'all')}>
+                  <SelectTrigger className="bg-void/50 border-white/5 font-mono text-[10px] uppercase h-9">
+                    <SelectValue placeholder="SEVERITY" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface-modal border-white/5">
+                    <SelectItem value="all">ALL_LVL</SelectItem>
+                    <SelectItem value="low">LOW</SelectItem>
+                    <SelectItem value="medium">MEDIUM</SelectItem>
+                    <SelectItem value="high">HIGH</SelectItem>
+                    <SelectItem value="critical">CRITICAL</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono font-bold text-secondary uppercase tracking-widest px-1">Lifecycle_State</p>
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as AlertStatus | 'all')}>
+                  <SelectTrigger className="bg-void/50 border-white/5 font-mono text-[10px] uppercase h-9">
+                    <SelectValue placeholder="STATUS" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface-modal border-white/5">
+                    <SelectItem value="all">ALL_ST</SelectItem>
+                    <SelectItem value="open">OPEN</SelectItem>
+                    <SelectItem value="assigned">ASSIGNED</SelectItem>
+                    <SelectItem value="resolved">RESOLVED</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono font-bold text-secondary uppercase tracking-widest px-1">Buffer_Sequence</p>
+                <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+                  <SelectTrigger className="bg-void/50 border-white/5 font-mono text-[10px] uppercase h-9">
+                    <SelectValue placeholder="ORDER" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface-modal border-white/5">
+                    <SelectItem value="created-desc">NEWEST_TS</SelectItem>
+                    <SelectItem value="created-asc">OLDEST_TS</SelectItem>
+                    <SelectItem value="severity-desc">SEV_DESC</SelectItem>
+                    <SelectItem value="severity-asc">SEV_ASC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-end pb-0.5">
+                <Button
+                  variant="secondary"
+                  className="w-full text-[10px] font-mono h-9 shadow-l1"
+                  onClick={() => {
+                    setSearch('');
+                    setSeverityFilter('all');
+                    setStatusFilter('all');
+                    setSortBy('created-desc');
+                  }}
+                >
+                  NULL_LOGS
+                </Button>
+              </div>
+            </div>
+            <div className="mt-6 flex items-center justify-between px-1">
+               <div className="flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                 <p className="text-[10px] font-mono text-secondary uppercase tracking-widest">Active_Records: {filtered.length}</p>
+               </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="float-entry" style={{ '--i': 3 } as any}>
+        <Card>
+          <CardHeader title="Incident Queue" subtitle="Operational stack for mission-critical alerts" />
+          <CardContent>
+            {content}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

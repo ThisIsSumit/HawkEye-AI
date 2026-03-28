@@ -11,39 +11,39 @@ interface AlertsTableProps {
 
 export function AlertsTable({alerts, onAssign, onResolve}: Readonly<AlertsTableProps>) {
   return (
-    <TableContainer className="max-h-130 rounded-lg border border-slate-200">
-      <Table className="table-sticky-header">
+    <TableContainer className="max-h-160 relative">
+      <Table>
         <thead>
           <tr>
-            <Th>Created</Th>
-            <Th>Alert</Th>
-            <Th>Source IP</Th>
-            <Th>Severity</Th>
-            <Th>Status</Th>
-            <Th>Analyst</Th>
-            <Th className="text-right">Actions</Th>
+            <Th>ALERT_TS</Th>
+            <Th>INCIDENT_DESC</Th>
+            <Th>SOURCE_IP</Th>
+            <Th>SEVERITY</Th>
+            <Th>STATUS</Th>
+            <Th>ASSIGNED_OP</Th>
+            <Th className="text-right uppercase">Decomposition</Th>
           </tr>
         </thead>
         <tbody>
           {alerts.map((alert) => (
-            <tr key={alert.id} className="bg-white hover:bg-slate-50">
-              <Td>{new Date(alert.createdAt).toLocaleString()}</Td>
-              <Td>{alert.title}</Td>
-              <Td className="font-mono text-xs">{alert.sourceIp}</Td>
+            <tr key={alert.id} className="group/row">
+              <Td className="font-mono text-[11px] text-secondary">{new Date(alert.createdAt).toLocaleString()}</Td>
+              <Td className="font-display font-medium text-white tracking-tight">{alert.title}</Td>
+              <Td className="font-mono text-[11px] text-accent font-bold">{alert.sourceIp}</Td>
               <Td>
                 <SeverityBadge severity={alert.severity} />
               </Td>
               <Td>
-                <StatusBadge className="capitalize">{alert.status}</StatusBadge>
+                <StatusBadge className="font-mono text-[9px] uppercase tracking-widest bg-void/50 border-white/5">{alert.status}</StatusBadge>
               </Td>
-              <Td>{alert.analyst ?? 'Unassigned'}</Td>
+              <Td className="font-mono text-[10px] text-secondary italic uppercase">{alert.analyst ?? 'NULL_OP'}</Td>
               <Td>
-                <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => onAssign(alert.id)}>
-                    Assign
+                <div className="flex justify-end gap-3 opacity-0 group-hover/row:opacity-100 transition-opacity duration-300">
+                  <Button size="sm" variant="secondary" className="h-7 text-[10px] font-mono px-4" onClick={() => onAssign(alert.id)}>
+                    ASSIGN_SEC
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => onResolve(alert.id)}>
-                    Resolve
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] font-mono px-4 border-white/10" onClick={() => onResolve(alert.id)}>
+                    RESOLVE_X
                   </Button>
                 </div>
               </Td>
