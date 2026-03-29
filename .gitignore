@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+.agent/
+.gsd/
+.gemini/
+adapters/
+scripts/
+docs/
